@@ -1,0 +1,9 @@
+[
+ {admin_link_check, ["admin", "link-check"], controller_admin,
+  [
+   {selected, 'admin_link_check'},
+   {acl_module, mod_link_check},
+   {template, "admin_link_check.tpl"},
+   {ssl, true}
+  ]}
+].
