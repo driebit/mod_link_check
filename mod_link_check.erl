@@ -80,9 +80,27 @@ handle_cast({check, fresh}, #state{context=Context} = State) ->
     {noreply, State};
 
 % Re-checks links belonging to RscId
-handle_cast({check, RscId}, #state{context=Context} = State) ->
+handle_cast({check, RscId}, #state{context=Context} = State) when is_integer(RscId) ->
     Urls = mlc_data:get_urls_byid(RscId, true, Context),
     mlc_crawler:spawn_check(Urls, self()),
+    {noreply, State};
+
+% Re-checks links ..
+% ... only useful if link is in link table and valid
+handle_cast({check, Links}, #state{context=Context} = State) when is_list(Links) ->
+    IgnoreInternal = z_convert:to_bool(
+        m_config:get_value(mod_link_check, ignore_internal, Context)
+    ),
+    CheckLinks = lists:filter(
+        fun(Link) ->
+            case mlc_parser:pre_crawl_status(Link, IgnoreInternal) of
+                undefined -> true;
+                _ -> false
+            end
+        end,
+        Links
+    ),
+    mlc_crawler:spawn_check(CheckLinks, self()),
     {noreply, State};
 
 % Delete links belonging to RscId
@@ -117,10 +135,9 @@ pid_observe_custom_pivot(Pid, #custom_pivot{id=RscId}, Context) ->
     SudoContext = z_acl:sudo(Context),
     Links = mlc_parser:find_links(RscId, SudoContext),
     mlc_data:update_link_table(RscId, Links, SudoContext),
-    % TODO: This doesn't seem to work on complete complete re-index.
     case Links of
         [] -> undefined;
-        _ -> gen_server:cast(Pid, {check, RscId})
+        _ -> gen_server:cast(Pid, {check, Links})
     end,
     none.
 
