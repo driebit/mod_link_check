@@ -30,7 +30,7 @@
                 {% with link.rsc_id as rsc_id %}
                     <span class="pull-right buttons">
                         <a href="{{ rsc_id.id.page_url }}" class="btn btn-default btn-xs">{_ view _}</a>
-                        <a href="{% url admin_edit_rsc id=rsc_id.id.page_url %}" class="btn btn-default btn-xs">{_ edit _}</a>
+                        <a href="{% url admin_edit_rsc id=rsc_id.id %}" class="btn btn-default btn-xs">{_ edit _}</a>
                     </span>
                 {% endwith %}
             </td>
