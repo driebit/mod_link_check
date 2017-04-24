@@ -20,12 +20,13 @@
     terminate/2,
     code_change/3,
 
+    find_pid/1,
+    cast/2,
+
     observe_admin_menu/3,
     pid_observe_custom_pivot/3,
     pid_observe_rsc_delete/3,
-
-    find_pid/1,
-    cast/2
+    event/2
 ]).
 
 -record(state, {context, timer}).
@@ -111,6 +112,8 @@ handle_cast({delete, RscId}, #state{context=Context} = State) ->
 % Updates the status of a link
 handle_cast({update_status, [Url, Status]}, #state{context=Context} = State) ->
     mlc_data:update_status(Url, Status, Context),
+    % TODO: Figure out how to flush all m_link caches at once
+    z_depcache:flush({m_link, problems}, Context),
     {noreply, State};
 
 handle_cast(Message, State) ->
@@ -129,7 +132,29 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+%% Utilities for casting messages to the module
+
+% @doc Get module Pid
+find_pid(Context) ->
+    case z_module_manager:whereis(?MODULE, Context) of
+        {ok, Pid} -> Pid;
+        _ -> undefined
+    end.
+
+% @doc Cast a message to the module Pid
+cast(Msg, Context) ->
+    case find_pid(Context) of
+        undefined -> undefined;
+        Pid -> gen_server:cast(Pid, Msg)
+    end.
+
 %% Zotonic events and notifications
+
+event(#postback{message={check, [{url, Url}]}}, Context) ->
+    cast({check, [Url]}, Context),
+    Context;
+event(#postback{message=_Postback}, Context) ->
+    Context.
 
 pid_observe_custom_pivot(Pid, #custom_pivot{id=RscId}, Context) ->
     SudoContext = z_acl:sudo(Context),
@@ -153,19 +178,3 @@ observe_admin_menu(admin_menu, Acc, Context) -> [
                 visiblecheck={acl, use, ?MODULE}}
 
      |Acc].
-
-%% Helpers for testing
-
-% @doc Get module Pid for testing
-find_pid(Context) ->
-    case z_module_manager:whereis(?MODULE, Context) of
-        {ok, Pid} -> Pid;
-        _ -> undefined
-    end.
-
-% @doc Cast a message to the module Pid
-cast(Msg, Context) ->
-    case find_pid(Context) of
-        undefined -> undefined;
-        Pid -> gen_server:cast(Pid, Msg)
-    end.

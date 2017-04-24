@@ -25,8 +25,12 @@
             <td>
                 {% with link.rsc_id as rsc_id %}
                     <span class="pull-right buttons">
-                        <a href="{{ rsc_id.id.page_url }}" class="btn btn-default btn-xs">{_ view _}</a>
-                        <a href="{% url admin_edit_rsc id=rsc_id.id %}" class="btn btn-default btn-xs">{_ edit _}</a>
+                        {% with "check-" ++ link.id as btn_id %}
+                            <button id="{{ btn_id }}" class="btn btn-default btn-xs">{_ check now _}</button>
+                            {% wire id=btn_id postback={check url=link.url} delegate="mod_link_check" %}
+                        {% endwith %}
+                        <a href="{{ rsc_id.id.page_url }}" class="btn btn-default btn-xs">{_ view page _}</a>
+                        <a href="{% url admin_edit_rsc id=rsc_id.id %}" class="btn btn-default btn-xs">{_ edit resource _}</a>
                     </span>
                 {% endwith %}
             </td>

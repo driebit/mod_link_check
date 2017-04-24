@@ -30,6 +30,7 @@ m_to_list(#m{value=[problems]}, Context) ->
             Urls = mlc_data:get_urls_problem(Context),
             friendly_statuses(Urls, Context)
         end,
+        {m_link, problems},
         IntervalSeconds,
         Context
     ).
@@ -70,7 +71,6 @@ friendly_status(Url, Context) ->
         ""
     ),
     [{friendly_status, FriendlyStatus},{status_tooltip, StatusTooltip}|Url].
-
 
 friendly_statuses(Urls, Context) ->
     lists:map(fun(Url) -> friendly_status(Url, Context) end, Urls).
