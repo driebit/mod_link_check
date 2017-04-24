@@ -15,7 +15,7 @@
                 <th></th>
             </tr>
         </thead>
-        {% for link in m.link.problem %}
+        {% for link in m.link.problems %}
         <tr>
             {% with link.url as link %}
                 <td><a href="{{ link }}">{{ link|truncate:80 }}</a></td>

@@ -13,15 +13,26 @@
 m_find_value(all, #m{value=undefined} = M, _Context) ->
     M#m{value=[all]};
 
-m_find_value(problem, #m{value=undefined} = M, _Context) ->
-    M#m{value=[problem]}.
+% Syntax: m.link.problems
+m_find_value(problems, #m{value=undefined} = M, _Context) ->
+    M#m{value=[problems]}.
 
 m_to_list(#m{value=[all]}, Context) ->
     mlc_data:get_urls_all(Context);
 
-m_to_list(#m{value=[problem]}, Context) ->
-    Urls = mlc_data:get_urls_problem(Context),
-    friendly_statuses(Urls, Context).
+m_to_list(#m{value=[problems]}, Context) ->
+    Interval = z_convert:to_integer(
+        m_config:get_value(mod_link_check, check_interval, Context)
+    ),
+    IntervalSeconds = Interval / 1000,
+    z_depcache:memo(
+        fun() ->
+            Urls = mlc_data:get_urls_problem(Context),
+            friendly_statuses(Urls, Context)
+        end,
+        IntervalSeconds,
+        Context
+    ).
 
 m_value(_M, _Context) ->
     undefined.
