@@ -20,7 +20,46 @@ m_to_list(#m{value=[all]}, Context) ->
     mlc_data:get_urls_all(Context);
 
 m_to_list(#m{value=[problem]}, Context) ->
-    mlc_data:get_urls_problem(Context).
+    Urls = mlc_data:get_urls_problem(Context),
+    friendly_statuses(Urls, Context).
 
 m_value(_M, _Context) ->
     undefined.
+
+% Formats a friendly status description
+friendly_status(Url, Context) ->
+    IsInvalid = proplists:get_value(invalid, Url),
+    ErrorReason = proplists:get_value(error_reason, Url),
+    LastStatus = proplists:get_value(last_status, Url),
+    FriendlyStatus = case {IsInvalid, ErrorReason, LastStatus} of
+        {false, undefined, undefined} ->
+            ?__(<<"Link has not been checked yet">>, Context);
+        % TODO: Give more detail on why the link is invalid
+        {true, _, _} ->
+            ?__(<<"Link is invalid">>, Context);
+        {false, undefined, LastStatus} ->
+            case LastStatus < 300 of
+                true -> ?__(<<"Link works correctly">>, Context);
+                false ->
+                    case LastStatus >= 400 of
+                        true -> ?__(<<"Server responded with an error">>, Context);
+                        false -> ?__(<<"Link has been redirected">>, Context)
+                    end
+             end;
+        % TODO: Give more detail on what error has occured
+        {_, ErrorReason, _} ->
+            ?__(<<"A network error has occured">>, Context)
+    end,
+    StatusTooltip = string:join(
+        [
+            "Invalid: ", z_convert:to_list(IsInvalid), "\n",
+            "Error Reason: ", z_convert:to_list(ErrorReason), "\n",
+            "Http Status: ", z_convert:to_list(LastStatus)
+        ],
+        ""
+    ),
+    [{friendly_status, FriendlyStatus},{status_tooltip, StatusTooltip}|Url].
+
+
+friendly_statuses(Urls, Context) ->
+    lists:map(fun(Url) -> friendly_status(Url, Context) end, Urls).
