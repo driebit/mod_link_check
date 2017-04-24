@@ -186,7 +186,7 @@ update_status(Url, Status, Context) when is_integer(Status) ->
     write_props_to_url(Url, Props2, Context);
 update_status(Url, Status, Context) when is_atom(Status); is_binary(Status) ->
     Now = calendar:universal_time(),
-    Props = [{last_check, Now}, {error_reason, Status}],
+    Props = [{last_check, Now}, {error_reason, Status}, {last_status, undefined}],
     write_props_to_url(Url, Props, Context);
 update_status(Url, {Reason, _}, Context) when is_atom(Reason) ->
     update_status(Url, Reason, Context);
