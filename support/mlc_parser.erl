@@ -59,7 +59,7 @@ find_links(RscId, Context) ->
 % @doc Determines the status of the found link before crawling
 % Returns undefined, invalid or ignore
 pre_crawl_status(Link, IgnoreInternal) ->
-    SmellsLikeAbsolute = z_string:starts_with("http", Link),
+    SmellsLikeAbsolute = z_string:starts_with("http", Link) or z_string:starts_with("https", Link),
     % TODO: Compare against hostname to determine internal
     SmellsLikeInternal = z_string:starts_with("/", Link),
     SmellsLikeMailto = z_string:starts_with("mailto:", Link),
