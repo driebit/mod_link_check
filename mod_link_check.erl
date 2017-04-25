@@ -71,19 +71,25 @@ init(Args) ->
 handle_call(Message, _From, State) ->
     {stop, {unknown_call, Message}, State}.
 
+% Force re-check of all known links
+handle_cast({check, force}, #state{context=Context} = State) ->
+    Urls = mlc_data:get_urls_distinct(Context),
+    mlc_crawler:spawn_checks(Urls, self()),
+    {noreply, State};
+
 % Re-checks links that haven't been verified since max age
 handle_cast({check, fresh}, #state{context=Context} = State) ->
     CheckAge = z_convert:to_integer(
         m_config:get_value(mod_link_check, check_age, Context)
     ),
     Urls = mlc_data:get_urls_aged(CheckAge, z_acl:sudo(Context)),
-    mlc_crawler:spawn_check(Urls, self()),
+    mlc_crawler:spawn_checks(Urls, self()),
     {noreply, State};
 
 % Re-checks links belonging to RscId
 handle_cast({check, RscId}, #state{context=Context} = State) when is_integer(RscId) ->
     Urls = mlc_data:get_urls_byid(RscId, true, Context),
-    mlc_crawler:spawn_check(Urls, self()),
+    mlc_crawler:spawn_checks(Urls, self()),
     {noreply, State};
 
 % Re-checks links ..
@@ -101,7 +107,7 @@ handle_cast({check, Links}, #state{context=Context} = State) when is_list(Links)
         end,
         Links
     ),
-    mlc_crawler:spawn_check(CheckLinks, self()),
+    mlc_crawler:spawn_checkss(CheckLinks, self()),
     {noreply, State};
 
 % Delete links belonging to RscId
@@ -112,8 +118,6 @@ handle_cast({delete, RscId}, #state{context=Context} = State) ->
 % Updates the status of a link
 handle_cast({update_status, [Url, Status]}, #state{context=Context} = State) ->
     mlc_data:update_status(Url, Status, Context),
-    % TODO: Figure out how to flush all m_link caches at once
-    z_depcache:flush({m_link, problems}, Context),
     {noreply, State};
 
 handle_cast(Message, State) ->
