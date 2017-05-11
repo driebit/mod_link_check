@@ -16,7 +16,9 @@
         {% for link in m.link.problems %}
         <tr>
             {% with link.url as link %}
-                <td><a href="{{ link }}">{{ link|truncate:80 }}</a></td>
+                <td>
+                    <pre><a href="{{ link }}">{{ link|truncate:80 }}</a></pre>
+                </td>
             {% endwith %}
             <td title="{{ link.status_tooltip }}">{{ link.friendly_status }}</td>
             <td title="Last checked: {{ link.last_check }}">{{ link.last_success }}</td>
