@@ -6,6 +6,7 @@
     group_by_hostname/1,
     check_status/1,
     check/2,
+    check/3,
     check_batch/2,
     spawn_checks/2
 ]).
@@ -54,20 +55,25 @@ group_by_hostname(Urls) ->
 check_status(Url) when is_binary(Url) ->
     check_status(z_convert:to_list(Url));
 check_status(Url) ->
-    case httpc:request(Url) of
+    Resp = httpc:request(Url),
+    case Resp of
         {ok, {{_,Status,_},_,_}} -> Status;
         {error, Reason} -> Reason
     end.
 
 % @doc Checks and sends the response back to the module Pid
-check(Urls, FromPid) ->
+check(Urls, FromPid, Delay) ->
     lists:foreach(
         fun(Url) ->
             Status = check_status(Url),
-            gen_server:cast(FromPid, {update_status, [Url, Status]})
+            gen_server:cast(FromPid, {update_status, [Url, Status]}),
+            timer:sleep(Delay * 1000)
         end,
         Urls
     ).
+
+check(Urls, FromPid) ->
+    check(Urls, FromPid, 0).
 
 check_batch([], _FromPid) ->
     ok;
@@ -75,7 +81,8 @@ check_batch(Urls, FromPid) ->
 
     % TODO: Make these configurable
     BatchSize = 100,
-    BatchTimeSeconds = 10,
+    BatchDelaySeconds = 10,
+    HostDelaySeconds = 10,
 
     LengthUrls = length(Urls),
     LimitedBatchSize = case BatchSize > LengthUrls of
@@ -89,13 +96,13 @@ check_batch(Urls, FromPid) ->
     GroupedUrls = group_by_hostname(ThisBatch),
     lists:foreach(
         fun({_Host, HostUrls}) ->
-            spawn(mlc_crawler, check, [HostUrls, FromPid])
+            spawn(mlc_crawler, check, [HostUrls, FromPid, HostDelaySeconds])
         end,
         GroupedUrls
     ),
 
     % Pause before next batch
-    timer:sleep(BatchTimeSeconds * 1000),
+    timer:sleep(BatchDelaySeconds * 1000),
     check_batch(NextBatch, FromPid).
 
 % @doc Spawns an async processes that crawl URLS
