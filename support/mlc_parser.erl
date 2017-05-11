@@ -57,19 +57,27 @@ find_links(RscId, Context) ->
     find_links(Props).
 
 % @doc Determines the status of the found link before crawling
-% Returns undefined, invalid or ignore
+% Returns valid, invalid or ignore
 pre_crawl_status(Link, IgnoreInternal) ->
-    SmellsLikeAbsolute = z_string:starts_with("http", Link) or z_string:starts_with("https", Link),
-    % TODO: Compare against hostname to determine internal
-    SmellsLikeInternal = z_string:starts_with("/", Link),
-    SmellsLikeMailto = z_string:starts_with("mailto:", Link),
-    case {SmellsLikeAbsolute, SmellsLikeInternal, SmellsLikeMailto} of
-        {true, _, _} -> undefined;
+    {Protocol, Host, Path, _, _} = mochiweb_util:urlsplit(z_convert:to_list(Link)),
+    IsAbsolute = case {Protocol, Host} of
+        {[], _} -> false;
+        {_, []} -> false;
+        _ -> true
+    end,
+    HasKnownProtocol = lists:member(Protocol, [[], "http", "https"]),
+    % TODO: Compare against hostname or known routes to determine internal
+    ProbablyInternal = case {Protocol, Host, Path} of
+        {[], [], _} -> z_string:starts_with("/", Path);
+        _ -> false
+    end,
+    case {IsAbsolute, ProbablyInternal, HasKnownProtocol} of
+        {true, _, true} -> valid;
         {_, true, _} ->
             case IgnoreInternal of
                 true -> ignore;
-                false -> undefined
+                false -> valid
             end;
-        {_, _, true} ->  ignore;
+        {_, _, false} ->  ignore;
         {_, _, _} -> invalid
     end.

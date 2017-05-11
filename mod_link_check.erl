@@ -101,13 +101,13 @@ handle_cast({check, Links}, #state{context=Context} = State) when is_list(Links)
     CheckLinks = lists:filter(
         fun(Link) ->
             case mlc_parser:pre_crawl_status(Link, IgnoreInternal) of
-                undefined -> true;
+                valid -> true;
                 _ -> false
             end
         end,
         Links
     ),
-    mlc_crawler:spawn_checkss(CheckLinks, self()),
+    mlc_crawler:spawn_checks(CheckLinks, self()),
     {noreply, State};
 
 % Delete links belonging to RscId

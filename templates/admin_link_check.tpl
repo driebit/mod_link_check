@@ -4,8 +4,6 @@
 
 {% block content %}
 
-    {# lib "css/admin_link_check.css" #}
-
     <table class="table table-striped">
         <thead>
             <tr>
