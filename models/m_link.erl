@@ -7,8 +7,6 @@
 -export([m_find_value/3, m_to_list/2, m_value/2]).
 -include("zotonic.hrl").
 
--compile(export_all).
-
 % Syntax: m.link.all
 m_find_value(all, #m{value=undefined} = M, _Context) ->
     M#m{value=[all]};
