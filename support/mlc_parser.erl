@@ -3,6 +3,7 @@
 
 -module(mlc_parser).
 -export([
+    unescape/1,
     match_all_links/1,
     find_links/1,
     find_links/2,
@@ -15,6 +16,25 @@
 capture_global(Re, Text) ->
     re:run(Text, Re, [{capture, all, binary}, global, bsr_unicode]).
 
+% @doc Unescape html encoding applied by tinymce
+unescape(Str) when is_list(Str) ->
+    z_convert:to_list(unescape(Str, []));
+unescape(Bin) when is_binary(Bin)->
+    unescape(z_convert:to_list(Bin), []).
+
+unescape([], Acc) ->
+    list_to_binary(lists:reverse(Acc));
+unescape("&lt;" ++ Rest, Acc) ->
+    unescape(Rest, lists:reverse("<", Acc));
+unescape("&gt;" ++ Rest, Acc) ->
+    unescape(Rest, lists:reverse(">", Acc));
+unescape("&amp;" ++ Rest, Acc) ->
+    unescape(Rest, lists:reverse("&", Acc));
+unescape("&quot;" ++ Rest, Acc) ->
+    unescape(Rest, lists:reverse("\"", Acc));
+unescape([C | Rest], Acc) ->
+    unescape(Rest, [C | Acc]).
+
 % @doc Find all href and src links in the text
 match_all_links(Text) when is_list(Text) ->
     match_all_links(z_convert:to_binary(Text));
@@ -23,7 +43,9 @@ match_all_links(Text) when is_binary(Text) ->
         nomatch -> [];
         {match, Matches} ->
             lists:map(
-                fun([_, _, Url]) -> Url end,
+                fun([_, _, Url]) ->
+                    mlc_parser:unescape(Url)
+                end,
                 Matches
             )
     end.
@@ -58,26 +80,21 @@ find_links(RscId, Context) ->
 
 % @doc Determines the status of the found link before crawling
 % Returns valid, invalid or ignore
+% TODO: Support configuration of other protocols than http / https
+% TODO: Compare against hostname or known routes to determine internal
 pre_crawl_status(Link, IgnoreInternal) ->
     {Protocol, Host, Path, _, _} = mochiweb_util:urlsplit(z_convert:to_list(Link)),
-    IsAbsolute = case {Protocol, Host} of
-        {[], _} -> false;
-        {_, []} -> false;
-        _ -> true
-    end,
-    HasKnownProtocol = lists:member(Protocol, [[], "http", "https"]),
-    % TODO: Compare against hostname or known routes to determine internal
-    ProbablyInternal = case {Protocol, Host, Path} of
-        {[], [], _} -> z_string:starts_with("/", Path);
-        _ -> false
-    end,
-    case {IsAbsolute, ProbablyInternal, HasKnownProtocol} of
-        {true, _, true} -> valid;
-        {_, true, _} ->
-            case IgnoreInternal of
-                true -> ignore;
-                false -> valid
+    case http_uri:parse(z_convert:to_list(Link)) of
+        {error, no_scheme} ->
+            ProbablyInternal = case {Protocol, Host, Path} of
+                {[], [], _} -> z_string:starts_with("/", Path);
+                _ -> false
+            end,
+            case {ProbablyInternal, IgnoreInternal} of
+                {true, true} -> ignore;
+                {true, false} -> valid;
+                {false, _} -> invalid
             end;
-        {_, _, false} ->  ignore;
-        {_, _, _} -> invalid
+        {error, _} -> invalid;
+        {ok, _} -> valid
     end.
