@@ -118,6 +118,7 @@ handle_cast({delete, RscId}, #state{context=Context} = State) ->
 % Updates the status of a link
 handle_cast({update_status, [Url, Status]}, #state{context=Context} = State) ->
     mlc_data:update_status(Url, Status, Context),
+    z_depcache:flush({m_link, problems}, Context),
     {noreply, State};
 
 handle_cast(Message, State) ->
