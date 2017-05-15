@@ -55,7 +55,7 @@ group_by_hostname(Urls) ->
 check_status(Url) when is_binary(Url) ->
     check_status(z_convert:to_list(Url));
 check_status(Url) ->
-    Resp = httpc:request(Url),
+    Resp = httpc:request(get, {Url, []}, [{autoredirect, false}], []),
     case Resp of
         {ok, {{_,Status,_},_,_}} -> Status;
         {error, Reason} -> Reason
