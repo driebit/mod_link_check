@@ -178,7 +178,7 @@ write_props_to_url(Url, Props, Context) ->
 % @doc Updates the response status for a given URL in the database
 update_status(Url, Status, Context) when is_integer(Status) ->
     Now = calendar:universal_time(),
-    Props1 = case Status >= 400 of
+    Props1 = case Status >= 300 of
         true -> [];
         false -> [{last_success, Now}]
     end,
