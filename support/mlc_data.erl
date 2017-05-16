@@ -9,6 +9,7 @@
     get_urls_all/1,
     get_urls_distinct/1,
     get_urls_problem/1,
+    get_urls_problem/2,
     get_urls_byid/2,
     get_urls_byid/3,
     get_urls_aged/2,
@@ -73,6 +74,14 @@ get_urls_distinct(Context) ->
 get_urls_problem(Context) ->
     z_db:assoc(
         "select * from external_links where invalid = true OR last_status >= 300 or last_status is null;",
+        Context
+    ).
+
+% @doc Get all URL's that need editorial attention
+get_urls_problem({Limit, Offset}, Context) ->
+    z_db:assoc(
+        "select * from external_links where invalid = true OR last_status >= 300 or last_status is null limit $1 offset $2;",
+        [Limit, Offset],
         Context
     ).
 

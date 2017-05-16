@@ -13,10 +13,18 @@ m_find_value(all, #m{value=undefined} = M, _Context) ->
 
 % Syntax: m.link.problems
 m_find_value(problems, #m{value=undefined} = M, _Context) ->
-    M#m{value=[problems]}.
+    M#m{value=[problems]};
+
+% Syntax: m.link.problems[offset]
+m_find_value(Offset, #m{value=[problems]} = M, _Context) ->
+    M#m{value=[Offset, problems]}.
 
 m_to_list(#m{value=[all]}, Context) ->
     mlc_data:get_urls_all(Context);
+
+m_to_list(#m{value=[Offset, problems]}, Context) ->
+    Urls = mlc_data:get_urls_problem({15, z_convert:to_integer(Offset)}, Context),
+    friendly_statuses(Urls, Context);
 
 m_to_list(#m{value=[problems]}, Context) ->
     Interval = z_convert:to_integer(
