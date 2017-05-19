@@ -55,7 +55,7 @@ init(Args) ->
         % How often initiate a check
         {mod_link_check, check_interval, timer:minutes(10)},
         % How long ago was last check
-        {mod_link_check, check_age, timer:hours(24)},
+        {mod_link_check, check_age, timer:hours(24 * 7)},
         % Ignore internal links
         {mod_link_check, ignore_internal, true}
     ],
