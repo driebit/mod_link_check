@@ -80,9 +80,15 @@ check_batch([], _FromPid) ->
 check_batch(Urls, FromPid) ->
 
     % TODO: Make these configurable
+
+    % Never sent more than BatchSize concurrent requests
     BatchSize = 100,
-    BatchDelaySeconds = 10,
-    HostDelaySeconds = 10,
+
+    % Wait HostDelaySeconds for next request to same host
+    HostDelaySeconds = 20,
+
+    % Wait for BatchDelaySeconds to start next batch of requests
+    BatchDelaySeconds = HostDelaySeconds * BatchSize,
 
     LengthUrls = length(Urls),
     LimitedBatchSize = case BatchSize > LengthUrls of
