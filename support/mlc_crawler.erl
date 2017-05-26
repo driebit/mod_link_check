@@ -51,11 +51,31 @@ group_by_hostname(Urls) ->
         Urls
     ).
 
+ensure_profile() ->
+    case inets:start(httpc, [{profile, mlc_crawler}]) of
+        {ok, _} ->
+            ok = httpc:set_options([
+                {max_sessions, 10},
+                {max_keep_alive_length, 10},
+                {keep_alive_timeout, 20000},
+                {cookies, enabled}
+            ], mlc_crawler),
+            periodic_cleanup(),
+            ok;
+        {error, {already_started, _}} -> ok
+    end.
+
+periodic_cleanup() ->
+    httpc:reset_cookies(mlc_crawler),
+    {ok, _} = timer:apply_after(timer:hours(1), ?MODULE, periodic_cleanup, []),
+    ok.
+
 % @doc Checks the response status of a given URL
 check_status(Url) when is_binary(Url) ->
     check_status(z_convert:to_list(Url));
 check_status(Url) ->
-    Resp = httpc:request(get, {Url, []}, [{autoredirect, false}], []),
+    ensure_profile(),
+    Resp = httpc:request(get, {Url, []}, [{autoredirect, false}], [], mlc_crawler),
     case Resp of
         {ok, {{_,Status,_},_,_}} -> Status;
         {error, Reason} -> Reason
