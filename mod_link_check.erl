@@ -53,7 +53,7 @@ init(Args) ->
 
     Config = [
         % How often initiate a check
-        {mod_link_check, check_interval, timer:minutes(10)},
+        {mod_link_check, check_interval, timer:hours(24)},
         % How long ago was last check
         {mod_link_check, check_age, timer:hours(24 * 7)},
         % Ignore internal links

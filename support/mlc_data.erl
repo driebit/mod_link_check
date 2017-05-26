@@ -116,7 +116,7 @@ get_urls_aged(Age, Context) ->
         "where last_check IS NULL and invalid = false ",
         "or last_check < (now() - interval '",
         AgeString,
-        " milliseconds');"
+        " milliseconds') and last_status != 301;"
     ], ""),
     Urls = z_db:q(
         "select distinct url from external_links " ++ WherePart,

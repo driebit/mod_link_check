@@ -67,7 +67,7 @@ check(Urls, FromPid, Delay) ->
         fun(Url) ->
             Status = check_status(Url),
             gen_server:cast(FromPid, {update_status, [Url, Status]}),
-            timer:sleep(Delay * 1000)
+            timer:sleep(Delay)
         end,
         Urls
     ).
@@ -81,14 +81,14 @@ check_batch(Urls, FromPid) ->
 
     % TODO: Make these configurable
 
-    % Never sent more than BatchSize concurrent requests
+    % Never start more than BatchSize concurrent requests
     BatchSize = 100,
 
     % Wait HostDelaySeconds for next request to same host
-    HostDelaySeconds = 20,
+    HostDelay = timer:seconds(20),
 
     % Wait for BatchDelaySeconds to start next batch of requests
-    BatchDelaySeconds = HostDelaySeconds * BatchSize,
+    BatchDelay = HostDelay * BatchSize,
 
     LengthUrls = length(Urls),
     LimitedBatchSize = case BatchSize > LengthUrls of
@@ -102,13 +102,13 @@ check_batch(Urls, FromPid) ->
     GroupedUrls = group_by_hostname(ThisBatch),
     lists:foreach(
         fun({_Host, HostUrls}) ->
-            spawn(mlc_crawler, check, [HostUrls, FromPid, HostDelaySeconds])
+            spawn(mlc_crawler, check, [HostUrls, FromPid, HostDelay])
         end,
         GroupedUrls
     ),
 
     % Pause before next batch
-    timer:sleep(BatchDelaySeconds * 1000),
+    timer:sleep(BatchDelay),
     check_batch(NextBatch, FromPid).
 
 % @doc Spawns an async processes that crawl URLS
