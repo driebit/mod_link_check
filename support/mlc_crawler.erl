@@ -8,7 +8,8 @@
     check/2,
     check/3,
     check_batch/2,
-    spawn_checks/2
+    spawn_checks/2,
+    periodic_cleanup/0
 ]).
 
 -include_lib("zotonic.hrl").
